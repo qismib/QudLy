@@ -20,7 +20,6 @@ class Gate:
         self.target_qudits = ()
         self.control_qudits = ()
         self.parameters = ()
-        self.Matrix()
 
 
     def dagger(self):
@@ -61,6 +60,7 @@ class  Gate_X(Gate):
         self.unitary = True
         self.clifford = True
         self.target_qudits = (q,)
+        self.Matrix()
 
 
 
@@ -82,6 +82,7 @@ class Gate_Z(Gate):
             self.unitary=True
             self.clifford = True
             self.target_qudits = (q,)
+            self.Matrix()
 
 
 
@@ -103,6 +104,7 @@ class Gate_H(Gate):
                 self.unitary=True
                 self.clifford = True
                 self.target_qudits = (q,)
+                self.Matrix()
 
     
     
@@ -130,10 +132,18 @@ class Gate_P(Gate):
             self.clifford = False
             self.target_qudits = (q,)
             self.parameters=(theta)
+            self.Matrix()
+
+
 
     def Matrix(self):
+        omega = np.exp(1j*2*np.pi/self.dim)
+        i=0
+        while i<self.dim:
+            self.matrix[i][i]=omega**(i*(self.parameters/np.pi))
+            i+=1
+        return self.matrix
 
-        pass
 
 
 
