@@ -16,11 +16,10 @@ class Gate:
         self.is_controlled_by = None 
         self.unitary = False
         self.clifford = False
-        self.matrix = np.zeros((self.dim, self.dim), dtype=np.complex128)
         self.target_qudits = ()
         self.control_qudits = ()
         self.parameters = ()
-
+        self.matrix = np.zeros((self.dim, self.dim), dtype=np.complex128)
 
     def dagger(self):
         new_gate=copy.copy(self)
@@ -44,8 +43,8 @@ class Gate:
 
 
     def __str__(self):
-        self.draw=np.array2string(self.matrix, precision=2,separator='  ', formatter={'complex_kind': lambda z:  
-                f"{z.real:g}" if np.isclose(z.imag, 0) else (f"{z.imag:g}j" if np.isclose(z.real, 0) else f"{z:g}")
+        self.draw=np.array2string(self.matrix, precision=2, separator='  ', formatter={'complex_kind': lambda z:  
+                f"{z.real:g}" if np.isclose(z.imag, 0) else (f"{z.imag:g}j" if np.isclose(z.real, 0) else f"{z:.3f}")
         } )
         return self.draw
 
@@ -128,7 +127,7 @@ class Gate_P(Gate):
     def __init__(self, q: int, theta: float):
             super().__init__()
             self.name = 'P'
-            self.unitary=False
+            self.unitary=True
             self.clifford = False
             self.target_qudits = (q,)
             self.parameters=(theta)
@@ -143,6 +142,67 @@ class Gate_P(Gate):
             self.matrix[i][i]=omega**(i*(self.parameters/np.pi))
             i+=1
         return self.matrix
+
+
+
+
+class Gate_SUMX(Gate):
+    def __init__(self, q: int, p: int):
+        super().__init__()
+        self.name = 'SUMX'
+        self.unitary=True
+        self.clifford = True
+        self.target_qudits = (q,)
+        self.control_qudits =(p,)
+        self.matrix = np.zeros((self.dim**2, self.dim**2), dtype=np.complex128)
+        self.Matrix()
+
+
+    def Matrix(self):
+        X=Gate_X(self.target_qudits)
+        i=0
+        while i<self.dim:
+            self.matrix[self.dim+((i-1)*self.dim):self.dim+i*self.dim, self.dim+((i-1)*self.dim):self.dim+i*self.dim] = np.linalg.matrix_power(X.matrix, i)
+            i+=1
+        return self.matrix
+
+
+
+
+class Gate_SUMP(Gate):
+    def __init__(self, q: int, p: int, theta: float):
+        super().__init__()
+        if theta==np.pi:
+            self.name='CZ'
+        else:
+            self.name = 'SUMP'
+        self.unitary=True
+        self.clifford = False
+        self.target_qudits = (q,)
+        self.control_qudits =(p,)
+        self.parameters=(theta)
+        self.matrix = np.zeros((self.dim**2, self.dim**2), dtype=np.complex128)
+        self.Matrix()
+
+
+    def Matrix(self):
+        P=Gate_P(self.target_qudits, self.parameters)
+        i=0
+        while i<self.dim:
+            self.matrix[self.dim+((i-1)*self.dim):self.dim+i*self.dim, self.dim+((i-1)*self.dim):self.dim+i*self.dim] = np.linalg.matrix_power(P.matrix, i)
+            i+=1
+        return self.matrix
+
+
+
+
+class Gate_CZ(Gate_SUMP):
+    def __init__(self, q: int, p: int):
+        super().__init__(q, p, np.pi)
+        self.name = 'CZ'
+
+
+         
 
 
 
