@@ -157,7 +157,6 @@ class Gate_SUMX(Gate):
         self.matrix = np.zeros((self.dim**2, self.dim**2), dtype=np.complex128)
         self.Matrix()
 
-
     def Matrix(self):
         X=Gate_X(self.target_qudits)
         i=0
@@ -203,6 +202,106 @@ class Gate_CZ(Gate_SUMP):
 
 
          
+
+
+def apply_CX(q: int, p: int):
+    Z=Gate_CZ(q, p)
+    apply_QFT(q)
+    apply_gate(Z)
+    apply_QFT(q)
+
+
+
+def apply_QFT(q: int):
+    num=len(q)
+    theta=float(0)
+    i=num-1 
+    while i>=0:
+        k=i-1
+        H=Gate_H.dagger(q[i])
+        apply_gate(H)
+        while k>=0:
+            theta=np.pi*2**(config.DIM*(k-i))
+            apply_gate(Gate_SUMP(q[i], q[k], theta))
+            k=k-1
+        i=i-1
+
+
+
+#------------------------------WORK IN PROGRESS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+def apply_gate(State1, Gate):   #lista di stati 
+    
+    #return state
+    pass
+
+
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+class State():
+
+    states=[]
+
+    def __init__(self, vett: complex, N:int):     #N da sistemare 
+
+        self.dim=config.DIM
+
+        if vett is None:
+            self.state=np.asarray(np.zeros(self.dim), dtype=np.complex128)
+            self.state[0]=1
+        else:
+            self.state=np.asarray(vett, dtype=np.complex128)
+            if self.state.shape!=(config.DIM,):
+                raise ValueError(f'State must have dimension {self.dim}')
+            if np.allclose(self.state, 0):
+                raise ValueError('State does not exists')
+        
+        if N is None:                                                      #da togliere con Circuit 
+            raise ValueError('State must have a indentification number')
+        self.num = N 
+
+        norm = np.linalg.norm(self.state)
+        if not np.isclose(norm, 0):
+            self.state /= norm
+        
+    def __array__(self, dtype=np.complex128):
+        return np.asarray(self.state, dtype=dtype)
+
+    def __getitem__(self, index):
+        return self.state[index]
+
+    def __str__(self):
+            return str(self.state)
+
+
+    def decompose(self):
+        base = np.eye(self.dim)
+        terms = []
+
+        for i, amplitude in enumerate(self.state):
+            if np.isclose(amplitude, 0):
+                continue
+            basis = base[i]
+            if np.allclose(basis, 0):
+                continue
+            terms.append(f"{amplitude} * |{i}>")
+        return " + ".join(terms)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
