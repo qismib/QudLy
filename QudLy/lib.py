@@ -1,11 +1,11 @@
 import numpy as np
 from abc import ABC, abstractmethod
 import  copy
+import math
+
 
 from . import ausiliary as Au
 from . import config
-#import ausiliary as Au
-#import config
 
 
 class Gate:
@@ -16,6 +16,7 @@ class Gate:
         self.is_controlled_by = None 
         self.unitary = False
         self.clifford = False
+        self.is_controlled =False
         self.target_qudits = ()
         self.control_qudits = ()
         self.parameters = ()
@@ -109,9 +110,9 @@ class Gate_H(Gate):
     
     def Matrix(self):
         omega = np.exp(1j*2*np.pi/self.dim)
-        i=0 #righe   
+        i=0    
         while i<self.dim:
-            k=0 #colonne 
+            k=0 
             while k<self.dim:
                 self.matrix[i][k]=omega**((self.dim-i)*k)
                 k+=1
@@ -146,24 +147,31 @@ class Gate_P(Gate):
 
 
 
+
+
 class Gate_SUMX(Gate):
     def __init__(self, q: int, p: int):
         super().__init__()
         self.name = 'SUMX'
         self.unitary=True
         self.clifford = True
+        self.is_controlled = True 
         self.target_qudits = (q,)
         self.control_qudits =(p,)
+        self.base_matrix = Gate_X(self.target_qudits[0]).matrix
         self.matrix = np.zeros((self.dim**2, self.dim**2), dtype=np.complex128)
         self.Matrix()
 
-    def Matrix(self):
-        X=Gate_X(self.target_qudits)
+
+    def Matrix(self):                 
         i=0
         while i<self.dim:
-            self.matrix[self.dim+((i-1)*self.dim):self.dim+i*self.dim, self.dim+((i-1)*self.dim):self.dim+i*self.dim] = np.linalg.matrix_power(X.matrix, i)
+            self.matrix[self.dim+((i-1)*self.dim):self.dim+i*self.dim, self.dim+((i-1)*self.dim):self.dim+i*self.dim] = np.linalg.matrix_power(self.base_matrix, i)    #np.block?
             i+=1
         return self.matrix
+
+
+
 
 
 
@@ -177,18 +185,19 @@ class Gate_SUMP(Gate):
             self.name = 'SUMP'
         self.unitary=True
         self.clifford = False
+        self.is_controlled= True
         self.target_qudits = (q,)
         self.control_qudits =(p,)
-        self.parameters=(theta)
+        self.parameters=(theta,)
+        self.base_matrix=Gate_P(self.target_qudits[0], self.parameters[0]).matrix
         self.matrix = np.zeros((self.dim**2, self.dim**2), dtype=np.complex128)
         self.Matrix()
 
 
     def Matrix(self):
-        P=Gate_P(self.target_qudits, self.parameters)
         i=0
         while i<self.dim:
-            self.matrix[self.dim+((i-1)*self.dim):self.dim+i*self.dim, self.dim+((i-1)*self.dim):self.dim+i*self.dim] = np.linalg.matrix_power(P.matrix, i)
+            self.matrix[self.dim+((i-1)*self.dim):self.dim+i*self.dim, self.dim+((i-1)*self.dim):self.dim+i*self.dim] = np.linalg.matrix_power(self.base_matrix, i)
             i+=1
         return self.matrix
 
@@ -204,77 +213,124 @@ class Gate_CZ(Gate_SUMP):
          
 
 
-def apply_CX(q: int, p: int):
+def apply_CX(state, q: int, p: int):      
     Z=Gate_CZ(q, p)
-    apply_QFT(q)
-    apply_gate(Z)
-    apply_QFT(q)
+    ris=state
+    ris=apply_QFT(ris, q, q)
+    ris=apply_gate(ris, [Z])
+    ris=apply_QFT(ris, q, q)
+    return ris
 
 
 
-def apply_QFT(q: int):
-    num=len(q)
+def apply_QFT(state, ini:int, fi:int):        
+    num=int(math.log(len(state.state), config.DIM))
     theta=float(0)
-    i=num-1 
-    while i>=0:
+    i=fi
+    ris=state
+    while i>=ini:
         k=i-1
-        H=Gate_H.dagger(q[i])
-        apply_gate(H)
-        while k>=0:
+        H=Gate_H(i)
+        H=H.dagger()
+        ris=apply_gate(ris, [H])
+        while k>=ini:
             theta=np.pi*2**(config.DIM*(k-i))
-            apply_gate(Gate_SUMP(q[i], q[k], theta))
+            P=Gate_SUMP(i, k, theta)
+            ris=apply_gate(ris, [P])
             k=k-1
         i=i-1
+    return ris
 
 
 
-#------------------------------WORK IN PROGRESS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-def apply_gate(State1, Gate):   #lista di stati 
-    
-    #return state
-    pass
-
-
-#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+def apply_SWAP(state, q: int, p: int):
+    res=state
+    res=apply_CX(res, q, p)
+    res=apply_CX(res, p, q)
+    res=apply_CX(res, q, p)
+    return res
 
 
 
-class State():
 
-    states=[]
+def apply_gate(st, gate):   #total state,  gate array
 
-    def __init__(self, vett: complex, N:int):     #N da sistemare 
+    dim=config.DIM     
+    num=int(math.log(len(st.state), dim))    
+    result=1   
+    lis=[np.eye(dim) for _ in range(num)]
+    i=0
 
-        self.dim=config.DIM
-
-        if vett is None:
-            self.state=np.asarray(np.zeros(self.dim), dtype=np.complex128)
-            self.state[0]=1
+    for g in gate:
+        if g.is_controlled:
+            lis[g.target_qudits[0]]=[g.base_matrix]
+            lis[g.control_qudits[0]]=g.target_qudits
+            
         else:
-            self.state=np.asarray(vett, dtype=np.complex128)
-            if self.state.shape!=(config.DIM,):
-                raise ValueError(f'State must have dimension {self.dim}')
-            if np.allclose(self.state, 0):
-                raise ValueError('State does not exists')
-        
-        if N is None:                                                      #da togliere con Circuit 
-            raise ValueError('State must have a indentification number')
-        self.num = N 
+            lis[g.target_qudits[0]]=g.matrix
 
-        norm = np.linalg.norm(self.state)
-        if not np.isclose(norm, 0):
-            self.state /= norm
-        
+          
+    while i<len(lis):
+        if isinstance(lis[i], np.ndarray):
+            result=np.kron(result, lis[i])
+            i+=1
+        else:
+            pos=i
+            U= None 
+            for y in range(dim):
+                if isinstance(lis[i], tuple):
+                    M=np.zeros((dim, dim), dtype=np.complex128)
+                    M[y, y]=1
+                    i+=1
+                    while not isinstance(lis[i], list):
+                        M=np.kron(M, lis[i])
+                        i+=1
+                    M=np.kron(M, np.linalg.matrix_power(lis[i][0], y))
+                    
+                else:
+                    M=np.linalg.matrix_power(lis[i][0], y)
+                    i+=1
+                    while not isinstance(lis[i], tuple):
+                        M=np.kron(M, lis[i])
+                        i+=1
+                    Y=np.zeros((dim, dim), dtype=np.complex128)
+                    Y[y, y]=1
+                    M=np.kron(M, Y)
+                    
+                if U is None:
+                    U=M.copy()
+                else:
+                    U=U+M
+                tot=i
+                i=pos
+            result=np.kron(result, U)
+            if i==0:
+                i=i+tot+1
+            else:
+                i=i+tot
+
+    Result=Total_state(result@st.state)
+    return Result
+
+
+
+
+
+class abs_State():
+
+    def __init__(self):
+        self.dim = None 
+        self.state = None 
+
     def __array__(self, dtype=np.complex128):
         return np.asarray(self.state, dtype=dtype)
-
+    
     def __getitem__(self, index):
         return self.state[index]
 
     def __str__(self):
-            return str(self.state)
-
+        self.draw=np.array2string(self.state, precision=2, separator='  ', formatter={'complex_kind': lambda z: f"{z.real:g}" if np.isclose(z.imag, 0) else (f"{z.imag:g}j" if np.isclose(z.real, 0) else f"{z:.3f}")} )
+        return self.draw
 
     def decompose(self):
         base = np.eye(self.dim)
@@ -293,18 +349,66 @@ class State():
 
 
 
+class State(abs_State):
+
+    def __init__(self, vett: complex, N:int):   
+
+        super().__init__()
+
+        self.dim=config.DIM
+
+        if vett is None:
+            self.state=np.asarray(np.zeros(self.dim), dtype=np.complex128)
+            self.state[0]=1
+        else:
+            self.state=np.asarray(vett, dtype=np.complex128)
+            if self.state.shape!=(config.DIM,):
+                raise ValueError(f'State must have dimension {self.dim}')
+            if np.allclose(self.state, 0):
+                raise ValueError('State does not exists')
+        
+        if N is None:                                                      
+            raise ValueError('State must have a indentification number')
+        
+        self.num = N 
+
+        self.normalize()
+
+
+    def normalize(self):
+        if not np.isclose(np.linalg.norm(self.state), 0):
+            self.state /= np.linalg.norm(self.state)
+    
+        
+   
+
+class Total_state(abs_State):            #stato totale |000>   (esempio)
+
+    def __init__(self, vett):   
+
+        super().__init__()
+
+        self.dim=len(vett)
+
+        if vett is None:
+            raise ValueError ('Insert your state')
+
+        self.state=vett
+        
+
+
+def create_state(lista):                     #Build the total state.  States must be given in order  
+
+    S=lista[0].state
+
+    for i in range(len(lista)-1):
+        S=np.kron(S, lista[i+1].state)
+    
+    new_state=Total_state(S)
+
+    return new_state
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
+  
