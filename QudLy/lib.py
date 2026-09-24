@@ -211,6 +211,9 @@ class Gate_CZ(Gate_SUMP):
 
 
          
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
 
 
 def apply_CX(state, q: int, p: int):      
@@ -223,8 +226,10 @@ def apply_CX(state, q: int, p: int):
 
 
 
-def apply_QFT(state, ini:int, fi:int):        
+def apply_QFT(state, ini:int=0, fi:int=None):        
     num=int(math.log(len(state.state), config.DIM))
+    if fi==None:
+        fi=num-1
     theta=float(0)
     i=fi
     ris=state
@@ -314,6 +319,8 @@ def apply_gate(st, gate):   #total state,  gate array
 
 
 
+#----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 
 class abs_State():
@@ -344,7 +351,6 @@ class abs_State():
                 continue
             terms.append(f"{amplitude} * |{i}>")
         return " + ".join(terms)
-
 
 
 
@@ -382,7 +388,7 @@ class State(abs_State):
         
    
 
-class Total_state(abs_State):            #stato totale |000>   (esempio)
+class Total_state(abs_State):            #total state    example: |000>   
 
     def __init__(self, vett):   
 
@@ -411,4 +417,74 @@ def create_state(lista):                     #Build the total state.  States mus
 
 
 
-  
+#----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+def measure(state):
+    prob=np.abs(state)**2
+    m=np.random.choice(len(state.state), p=prob)
+    st=indexes(m, len(state.state))
+    return st
+
+
+
+def measure_prob(state):
+    prob=np.abs(state)**2
+    result=[]
+    for l in range(len(state.state)):
+        if prob[l]!=0:
+            result.append([indexes(l, len(state.state)), round(float(prob[l]), 4)])
+    return result
+
+
+
+def measure_single(state, q: int, collapse:bool = False):
+    dim=config.DIM
+    num=int(math.log(len(state.state), dim))
+    st = state.state.reshape([dim] * num)
+    ax=tuple(i for i in range(num) if i != q)         
+    prob = np.sum(np.abs(st)**2, axis=ax)
+    m=np.random.choice(dim, p=prob)
+    if collapse:                                    
+        new_vett=np.zeros_like(st)
+        slices= [slice(None)]*num
+        slices[q]=m
+        new_vett[tuple(slices)]=st[tuple(slices)]
+        norm = np.linalg.norm(new_vett)
+        new_vett /= norm
+        new_state=Total_state(new_vett.reshape(-1))
+        return m, new_state
+    else:
+        return m 
+
+
+
+def measure_prob_single(state, q:int ):
+    dim=config.DIM
+    num=int(math.log(len(state.state), dim))
+    st = state.state.reshape([dim] * num)
+    ax=tuple(i for i in range(num) if i != q)
+    prob = np.sum(np.abs(st)**2, axis=ax)
+    result=[]
+    for i in range(len(prob)):
+        if prob[i]!=0:
+            result.append([i, round(float(prob[i]), 4)])
+    return result
+
+
+
+def indexes(pos:int, l:int):    # position in the array and lenght of the array
+    dim=config.DIM
+    num=int(math.log(l, dim))
+    digits=[]
+    i=num-1
+    while i>=0:
+        digits.append(pos//dim**i)
+        pos=pos%(dim**i)
+        i=i-1
+    return digits 
+
+
+
