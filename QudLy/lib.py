@@ -220,7 +220,7 @@ def apply_CX(state, q: int, p: int):
     Z=Gate_CZ(q, p)
     ris=state
     ris=apply_QFT(ris, q, q)
-    ris=apply_gate(ris, [Z])
+    ris=apply_gate(ris, Z)
     ris=apply_QFT(ris, q, q)
     return ris
 
@@ -237,11 +237,11 @@ def apply_QFT(state, ini:int=0, fi:int=None):
         k=i-1
         H=Gate_H(i)
         H=H.dagger()
-        ris=apply_gate(ris, [H])
+        ris=apply_gate(ris, H)
         while k>=ini:
             theta=np.pi*2**(config.DIM*(k-i))
             P=Gate_SUMP(i, k, theta)
-            ris=apply_gate(ris, [P])
+            ris=apply_gate(ris, P)
             k=k-1
         i=i-1
     return ris
@@ -258,64 +258,43 @@ def apply_SWAP(state, q: int, p: int):
 
 
 
-def apply_gate(st, gate):   #total state,  gate array
 
-    dim=config.DIM     
-    num=int(math.log(len(st.state), dim))    
-    result=1   
-    lis=[np.eye(dim) for _ in range(num)]
-    i=0
 
-    for g in gate:
-        if g.is_controlled:
-            lis[g.target_qudits[0]]=[g.base_matrix]
-            lis[g.control_qudits[0]]=g.target_qudits
-            
-        else:
-            lis[g.target_qudits[0]]=g.matrix
+def apply_gate(state, gate): 
+    dim=config.DIM
+    num=int(math.log(len(state.state), dim))
+    st = state.state.reshape([dim] * num).copy()
+    if gate.is_controlled:                       #CASINO
+        control=gate.control_qudits[0]
+        target=gate.target_qudits[0]
+        if control<gate.target_qudits[0]:
+            target-=1
+        for i in range(dim):
+            index=[slice(None)]*num
+            index[control]=i
+            Res=np.tensordot(np.linalg.matrix_power(gate.base_matrix, i), st[tuple(index)], axes=([1], [target]))
+            Res=np.moveaxis(Res, 0, target)
+            st[tuple(index)]=Res
+        res=Total_state(st.reshape(-1))
+    else:
+        st=np.tensordot(gate.matrix, st, axes=([1], [gate.target_qudits[0]]))
+        st=np.moveaxis(st, 0, gate.target_qudits[0])
+        res=Total_state(st.reshape(-1))
+    return res 
 
-          
-    while i<len(lis):
-        if isinstance(lis[i], np.ndarray):
-            result=np.kron(result, lis[i])
-            i+=1
-        else:
-            pos=i
-            U= None 
-            for y in range(dim):
-                if isinstance(lis[i], tuple):
-                    M=np.zeros((dim, dim), dtype=np.complex128)
-                    M[y, y]=1
-                    i+=1
-                    while not isinstance(lis[i], list):
-                        M=np.kron(M, lis[i])
-                        i+=1
-                    M=np.kron(M, np.linalg.matrix_power(lis[i][0], y))
-                    
-                else:
-                    M=np.linalg.matrix_power(lis[i][0], y)
-                    i+=1
-                    while not isinstance(lis[i], tuple):
-                        M=np.kron(M, lis[i])
-                        i+=1
-                    Y=np.zeros((dim, dim), dtype=np.complex128)
-                    Y[y, y]=1
-                    M=np.kron(M, Y)
-                    
-                if U is None:
-                    U=M.copy()
-                else:
-                    U=U+M
-                tot=i
-                i=pos
-            result=np.kron(result, U)
-            if i==0:
-                i=i+tot+1
-            else:
-                i=i+tot
 
-    Result=Total_state(result@st.state)
-    return Result
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
