@@ -8,7 +8,13 @@ from . import ausiliary as Au
 from . import config
 
 
+
 class Gate:
+
+    """ The abstract class inherited by all gates, every gate have a matrix associated with
+    when a gate is created you must specify the qudit on which the gate will act.
+    if a gate is controlled, you also must give the qudit that controls the gate.
+    """
 
     def __init__(self):
         self.dim = config.DIM
@@ -22,18 +28,15 @@ class Gate:
         self.parameters = ()
         self.matrix = np.zeros((self.dim, self.dim), dtype=np.complex128)
 
+
+    """These are some operations that could be useful for gate manipulation"""
+
     def dagger(self):
         new_gate=copy.copy(self)
         new_gate.matrix = self.matrix.conj().T
         new_gate.is_controlled_by = self.is_controlled_by
         new_gate.control_qudits = self.control_qudits
         return new_gate
-
-    
-    def is_unitary(self):
-        uni=np.allclose(self.matrix.conj().T @ self.matrix, np.eye(self.matrix.shape[0]))
-        self.unitary=uni
-        return uni
 
 
     @abstractmethod
@@ -42,6 +45,7 @@ class Gate:
             NotImplementedError
         )
 
+    """ A method that controls the printing of the gate matrix"""
 
     def __str__(self):
         self.draw=np.array2string(self.matrix, precision=2, separator='  ', formatter={'complex_kind': lambda z:  
@@ -50,6 +54,10 @@ class Gate:
         return self.draw
 
 
+
+
+
+"""These are the most important single-qudit gates, when a gate is created, its matrix is generated """
 
 
 class  Gate_X(Gate):
@@ -114,7 +122,7 @@ class Gate_H(Gate):
         while i<self.dim:
             k=0 
             while k<self.dim:
-                self.matrix[i][k]=omega**((self.dim-i)*k)
+                self.matrix[i][k]=omega**(i*k)
                 k+=1
             i+=1
         self.matrix=self.matrix/np.sqrt(self.dim)
@@ -146,7 +154,7 @@ class Gate_P(Gate):
 
 
 
-
+"""Some controlled gates. They are made up of a base_matrix, which set the """
 
 
 class Gate_SUMX(Gate):
@@ -216,7 +224,7 @@ class Gate_CZ(Gate_SUMP):
 
 
 
-def apply_CX(state, q: int, p: int):      
+def apply_CX(state, p: int, q: int):      
     Z=Gate_CZ(q, p)
     ris=state
     ris=apply_QFT(ris, q, q)
@@ -227,7 +235,7 @@ def apply_CX(state, q: int, p: int):
 
 
 def apply_QFT(state, ini:int=0, fi:int=None):        
-    num=int(math.log(len(state.state), config.DIM))
+    num=round(math.log(len(state.state), config.DIM))
     if fi==None:
         fi=num-1
     theta=float(0)
@@ -236,7 +244,6 @@ def apply_QFT(state, ini:int=0, fi:int=None):
     while i>=ini:
         k=i-1
         H=Gate_H(i)
-        H=H.dagger()
         ris=apply_gate(ris, H)
         while k>=ini:
             theta=np.pi*2**(config.DIM*(k-i))
@@ -262,9 +269,9 @@ def apply_SWAP(state, q: int, p: int):
 
 def apply_gate(state, gate): 
     dim=config.DIM
-    num=int(math.log(len(state.state), dim))
+    num=round(math.log(len(state.state), dim))
     st = state.state.reshape([dim] * num).copy()
-    if gate.is_controlled:                       #CASINO
+    if gate.is_controlled:                      
         control=gate.control_qudits[0]
         target=gate.target_qudits[0]
         if control<gate.target_qudits[0]:
@@ -421,7 +428,7 @@ def measure_prob(state):
 
 def measure_single(state, q: int, collapse:bool = False):
     dim=config.DIM
-    num=int(math.log(len(state.state), dim))
+    num=round(math.log(len(state.state), dim))
     st = state.state.reshape([dim] * num)
     ax=tuple(i for i in range(num) if i != q)         
     prob = np.sum(np.abs(st)**2, axis=ax)
@@ -442,7 +449,7 @@ def measure_single(state, q: int, collapse:bool = False):
 
 def measure_prob_single(state, q:int ):
     dim=config.DIM
-    num=int(math.log(len(state.state), dim))
+    num=round(math.log(len(state.state), dim))
     st = state.state.reshape([dim] * num)
     ax=tuple(i for i in range(num) if i != q)
     prob = np.sum(np.abs(st)**2, axis=ax)
@@ -456,7 +463,7 @@ def measure_prob_single(state, q:int ):
 
 def indexes(pos:int, l:int):    # position in the array and lenght of the array
     dim=config.DIM
-    num=int(math.log(l, dim))
+    num=round(math.log(l, dim))
     digits=[]
     i=num-1
     while i>=0:
