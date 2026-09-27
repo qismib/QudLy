@@ -84,3 +84,22 @@ def apply_gate_2(st, gate):   #total state,  gate array
     return Result
 
 '''
+
+
+
+"""
+def decompose(self):
+        base = np.eye(self.dim)
+        terms = []
+
+        for i, amplitude in enumerate(self.state):
+            if np.isclose(amplitude, 0):
+                continue
+            basis = base[i]
+            if np.allclose(basis, 0):
+                continue
+            terms.append(f"{amplitude} * |{i}>")
+        return " + ".join(terms)
+
+
+"""

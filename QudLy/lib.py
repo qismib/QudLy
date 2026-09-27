@@ -9,7 +9,7 @@ from . import config
 
 
 
-class Gate:
+class Gate(ABC):
 
     """ The abstract class inherited by all gates, every gate have a matrix associated with
     when a gate is created you must specify the qudit on which the gate will act.
@@ -139,7 +139,7 @@ class Gate_P(Gate):
             self.unitary=True
             self.clifford = False
             self.target_qudits = (q,)
-            self.parameters=(theta)
+            self.parameters=(theta, )
             self.Matrix()
 
 
@@ -148,7 +148,7 @@ class Gate_P(Gate):
         omega = np.exp(1j*2*np.pi/self.dim)
         i=0
         while i<self.dim:
-            self.matrix[i][i]=omega**(i*(self.parameters/np.pi))
+            self.matrix[i][i]=omega**(i*(self.parameters[0]/np.pi))
             i+=1
         return self.matrix
 
@@ -187,7 +187,7 @@ class Gate_SUMX(Gate):
 class Gate_SUMP(Gate):
     def __init__(self, q: int, p: int, theta: float):
         super().__init__()
-        if theta==np.pi:
+        if np.isclose(theta, np.pi):
             self.name='CZ'
         else:
             self.name = 'SUMP'
@@ -315,6 +315,10 @@ class abs_State():
         self.dim = None 
         self.state = None 
 
+    def normalize(self):
+        if not np.isclose(np.linalg.norm(self.state), 1):
+            self.state /= np.linalg.norm(self.state)
+
     def __array__(self, dtype=np.complex128):
         return np.asarray(self.state, dtype=dtype)
     
@@ -325,18 +329,7 @@ class abs_State():
         self.draw=np.array2string(self.state, precision=2, separator='  ', formatter={'complex_kind': lambda z: f"{z.real:g}" if np.isclose(z.imag, 0) else (f"{z.imag:g}j" if np.isclose(z.real, 0) else f"{z:.3f}")} )
         return self.draw
 
-    def decompose(self):
-        base = np.eye(self.dim)
-        terms = []
-
-        for i, amplitude in enumerate(self.state):
-            if np.isclose(amplitude, 0):
-                continue
-            basis = base[i]
-            if np.allclose(basis, 0):
-                continue
-            terms.append(f"{amplitude} * |{i}>")
-        return " + ".join(terms)
+    
 
 
 
@@ -367,9 +360,6 @@ class State(abs_State):
         self.normalize()
 
 
-    def normalize(self):
-        if not np.isclose(np.linalg.norm(self.state), 0):
-            self.state /= np.linalg.norm(self.state)
     
         
    
@@ -379,13 +369,28 @@ class Total_state(abs_State):            #total state    example: |000>
     def __init__(self, vett):   
 
         super().__init__()
-
+        if vett is None:
+                    raise ValueError ('Insert your state')
+        
         self.dim=len(vett)
 
-        if vett is None:
-            raise ValueError ('Insert your state')
-
         self.state=vett
+
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, vett):
+        if vett is None:
+            self._state = None
+            return
+
+        vett = np.asarray(vett)
+        if not np.isclose(np.sum(np.abs(vett)**2), 1) :
+            raise ValueError("The state is not normalized")
+
+        self._state = vett
         
 
 
@@ -420,7 +425,7 @@ def measure_prob(state):
     prob=np.abs(state)**2
     result=[]
     for l in range(len(state.state)):
-        if prob[l]!=0:
+        if not np.isclose(prob[l], 0):
             result.append([indexes(l, len(state.state)), round(float(prob[l]), 4)])
     return result
 
