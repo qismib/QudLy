@@ -226,10 +226,11 @@ class Gate_CZ(Gate_SUMP):
 
 def apply_CX(state, p: int, q: int):      
     Z=Gate_CZ(q, p)
+    H=Gate_H(q)
     ris=state
-    ris=apply_QFT(ris, q, q)
+    ris=apply_gate(ris, H)
     ris=apply_gate(ris, Z)
-    ris=apply_QFT(ris, q, q)
+    ris=apply_gate(ris, H)
     return ris
 
 
@@ -239,19 +240,27 @@ def apply_QFT(state, ini:int=0, fi:int=None):
     if fi==None:
         fi=num-1
     theta=float(0)
-    i=fi
+    i=ini
     ris=state
-    while i>=ini:
-        k=i-1
+    while i<=fi:
         H=Gate_H(i)
         ris=apply_gate(ris, H)
-        while k>=ini:
-            theta=np.pi*2**(config.DIM*(k-i))
+        k=i+1
+        while k<=fi:
+            theta=np.pi*config.DIM**(i-k)
             P=Gate_SUMP(i, k, theta)
             ris=apply_gate(ris, P)
-            k=k-1
-        i=i-1
-    return ris
+            k=k+1
+        i=i+1
+
+    In=ini
+    Fin=fi 
+    while In<=Fin:
+        ris=apply_SWAP(ris, In, Fin)
+        In=In+1
+        Fin=Fin-1
+    return ris  
+
 
 
 
@@ -261,8 +270,6 @@ def apply_SWAP(state, q: int, p: int):
     res=apply_CX(res, p, q)
     res=apply_CX(res, q, p)
     return res
-
-
 
 
 
@@ -288,18 +295,6 @@ def apply_gate(state, gate):
         st=np.moveaxis(st, 0, gate.target_qudits[0])
         res=Total_state(st.reshape(-1))
     return res 
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -388,7 +383,7 @@ class Total_state(abs_State):            #total state    example: |000>
 
         vett = np.asarray(vett)
         if not np.isclose(np.sum(np.abs(vett)**2), 1) :
-            raise ValueError("The state is not normalized")
+            self.normalize()
 
         self._state = vett
         
@@ -460,7 +455,7 @@ def measure_prob_single(state, q:int ):
     prob = np.sum(np.abs(st)**2, axis=ax)
     result=[]
     for i in range(len(prob)):
-        if prob[i]!=0:
+        if np.isclose(0, prob[i]):
             result.append([i, round(float(prob[i]), 4)])
     return result
 
