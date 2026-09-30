@@ -531,7 +531,7 @@ def measure_prob_single(state, q:int ):
     prob = np.sum(np.abs(st)**2, axis=ax)
     result=[]
     for i in range(len(prob)):
-        if np.isclose(0, prob[i]):
+        if not np.isclose(0, prob[i]):
             result.append([i, round(float(prob[i]), 4)])
     return result
 
