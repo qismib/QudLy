@@ -11,7 +11,7 @@ from . import config
 
 class Gate(ABC):
 
-    """ The abstract class inherited by all gates, every gate have a matrix associated with
+    """ The abstract class inherited by all gates, every gate has a matrix associated with
     when a gate is created you must specify the qudit on which the gate will act.
     if a gate is controlled, you also must give the qudit that controls the gate.
     """
@@ -62,6 +62,8 @@ class Gate(ABC):
 
 class  Gate_X(Gate):
 
+    """A gate that acts as X|j> = |(j+1) mod dim>    """
+
     def __init__(self, q: int):
         super().__init__()
         self.name = 'X'
@@ -84,6 +86,9 @@ class  Gate_X(Gate):
 
 
 class Gate_Z(Gate):
+
+    """A gate that acts as Z|j> = ω^j|j>   where ω = exp(2πi/dim) """
+
     def __init__(self, q: int):
             super().__init__()
             self.name = 'Z'
@@ -106,6 +111,9 @@ class Gate_Z(Gate):
 
 
 class Gate_H(Gate):
+
+    """A gate that acts as H|j> = 1/sqrt(d)sum(ω**(j*k)|k>)  where ω = exp(2πi/dim) and sum is between 0 and dim-1 in k"""
+
     def __init__(self, q: int):
                 super().__init__()
                 self.name = 'H'
@@ -132,7 +140,10 @@ class Gate_H(Gate):
 
 
 class Gate_P(Gate):
-     
+
+    """A gate that represent the generalized rotation around the Z-axis, the gate requires a float parameter which is the angle.
+    It acts as P(θ)|j> = ω^(j*θ)/π|j>   where ω = exp(2πi/dim) """
+
     def __init__(self, q: int, theta: float):
             super().__init__()
             self.name = 'P'
@@ -154,10 +165,13 @@ class Gate_P(Gate):
 
 
 
-"""Some controlled gates. They are made up of a base_matrix, which set the """
+"""Some controlled gates. They are made up of a base_matrix, which set the gate that is applied n times depending on the state of the control qudit """
 
 
 class Gate_SUMX(Gate):
+
+    """the controlled version of the gate X, it acts as SUMX|j>|k> = |j>|(j+k>) mod dim>        """
+
     def __init__(self, q: int, p: int):
         super().__init__()
         self.name = 'SUMX'
@@ -185,6 +199,9 @@ class Gate_SUMX(Gate):
 
 
 class Gate_SUMP(Gate):
+
+    """the controlled version of the gate P, it acts as SUMP(θ)|j>|k> = ω^(k*j*θ)/π|j>|k>   where ω = exp(2πi/dim)         """
+
     def __init__(self, q: int, p: int, theta: float):
         super().__init__()
         if np.isclose(theta, np.pi):
@@ -213,6 +230,9 @@ class Gate_SUMP(Gate):
 
 
 class Gate_CZ(Gate_SUMP):
+
+    """A specific version of SUMP with θ=π """
+
     def __init__(self, q: int, p: int):
         super().__init__(q, p, np.pi)
         self.name = 'CZ'
@@ -224,7 +244,11 @@ class Gate_CZ(Gate_SUMP):
 
 
 
-def apply_CX(state, p: int, q: int):      
+def apply_CX(state, p: int, q: int):   
+
+    """A function that receive a state and two int that rapresents qudits. CX rapresent a operator that act  as 
+    CX|x>|y> = |x>|-x-y>   """
+
     Z=Gate_CZ(q, p)
     H=Gate_H(q)
     ris=state
@@ -236,6 +260,14 @@ def apply_CX(state, p: int, q: int):
 
 
 def apply_QFT(state, ini:int=0, fi:int=None):        
+
+    """ 
+    Applies the Quantum Fourier Transform to a range of qudits.
+    The QFT is the quantum analogue of the discrete Fourier transform.
+    For a system of n qudits with dimension dim, it transforms a computational
+    basis state |x> into  QFT|x> = (1 / sqrt(dim^n)) * sum_{y=0}^{dim^n-1}ω^(x*y) |y>,
+    where ω = exp(2*pi*i/dim^n) is the primitive dim^n-th root of unity. """
+
     num=round(math.log(len(state.state), config.DIM))
     if fi==None:
         fi=num-1
@@ -265,6 +297,10 @@ def apply_QFT(state, ini:int=0, fi:int=None):
 
 
 def apply_SWAP(state, q: int, p: int):
+
+    """A function that receives a state and two ints representing qudits. SWAP represents an operator that acts as
+    SWAP|j>|k> = |k>|j>."""
+
     res=state
     res=apply_CX(res, q, p)
     res=apply_CX(res, p, q)
@@ -275,6 +311,12 @@ def apply_SWAP(state, q: int, p: int):
 
 
 def apply_gate(state, gate): 
+
+    """
+    The function applies a gate to a total quantum state. It uses the tensor representation of the total state so that the gate acts only on the corresponding qudit.
+    For now, the function only supports gates controlled by a single qudit.
+    The inputs are a Total_state and a gate."""
+
     dim=config.DIM
     num=round(math.log(len(state.state), dim))
     st = state.state.reshape([dim] * num).copy()
@@ -304,7 +346,11 @@ def apply_gate(state, gate):
 
 
 
-class abs_State():
+class abs_State(ABC):
+ 
+    """The abstract class inherited by all states. Every state has a dimension and an array associated with it.
+    The methods are useful for printing the array and formatting it.
+    """  
 
     def __init__(self):
         self.dim = None 
@@ -327,9 +373,11 @@ class abs_State():
     
 
 
-
-
 class State(abs_State):
+
+    """ The class represent a single qudit state. For initialization you must give an array and a index, which represents the wire number. 
+    A single qudit state must have dimension = Dim. 
+    Every state is automatically normalized. """
 
     def __init__(self, vett: complex, N:int):   
 
@@ -348,7 +396,7 @@ class State(abs_State):
                 raise ValueError('State does not exists')
         
         if N is None:                                                      
-            raise ValueError('State must have a indentification number')
+            raise ValueError('State must have an identification number')
         
         self.num = N 
 
@@ -359,7 +407,10 @@ class State(abs_State):
         
    
 
-class Total_state(abs_State):            #total state    example: |000>   
+class Total_state(abs_State):     
+
+    """The class represent a total state. It was decided to adopt a linear representation 
+    with the most significant qudit on the left. The state is automatically normalized.              """     #total state    example: |000>   
 
     def __init__(self, vett):   
 
@@ -389,10 +440,13 @@ class Total_state(abs_State):            #total state    example: |000>
         
 
 
-def create_state(lista):                     #Build the total state.  States must be given in order  
+def create_state(lista): 
+    
+    """A function that accept a list of states and compute the total state,
+    which is the product tensor of the single-state qudit. It has dimension = dim^n.
+    The states must be given in order from the most sigificant to the less significant """
 
     S=lista[0].state
-
     for i in range(len(lista)-1):
         S=np.kron(S, lista[i+1].state)
     
@@ -409,6 +463,9 @@ def create_state(lista):                     #Build the total state.  States mus
 
 
 def measure(state):
+
+    """A function that simulate a state's measure. It returns the index of the state """
+
     prob=np.abs(state)**2
     m=np.random.choice(len(state.state), p=prob)
     st=indexes(m, len(state.state))
@@ -417,6 +474,9 @@ def measure(state):
 
 
 def measure_prob(state):
+
+    """A function that compute all the probabilities and print them associated with their index """
+
     prob=np.abs(state)**2
     result=[]
     for l in range(len(state.state)):
@@ -427,6 +487,10 @@ def measure_prob(state):
 
 
 def measure_single(state, q: int, collapse:bool = False):
+
+    """A function that simulate a qudit's measure. The qudit's number must be given 
+    It returns the index of the state. If collapse is true, the function return also the collaplsed state """
+
     dim=config.DIM
     num=round(math.log(len(state.state), dim))
     st = state.state.reshape([dim] * num)
@@ -448,6 +512,8 @@ def measure_single(state, q: int, collapse:bool = False):
 
 
 def measure_prob_single(state, q:int ):
+    """A function that compute all the probabilities for a single qudit and print
+     them associated with their index """
     dim=config.DIM
     num=round(math.log(len(state.state), dim))
     st = state.state.reshape([dim] * num)
@@ -461,7 +527,10 @@ def measure_prob_single(state, q:int ):
 
 
 
-def indexes(pos:int, l:int):    # position in the array and lenght of the array
+def indexes(pos:int, l:int):    
+
+    """given the array's lenght and the position of an array's entrance, it gives the associated index"""
+
     dim=config.DIM
     num=round(math.log(l, dim))
     digits=[]

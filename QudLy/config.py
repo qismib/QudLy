@@ -1,5 +1,11 @@
-DIM = 3
+
+DIM = None
 
 def set_dim(dim):
     global DIM
-    DIM=dim
+
+    if DIM is not None:
+        raise RuntimeError("DIM è già stata inizializzata")
+
+    DIM = dim
+
