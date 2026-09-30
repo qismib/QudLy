@@ -417,6 +417,13 @@ class Total_state(abs_State):
         super().__init__()
         if vett is None:
                     raise ValueError ('Insert your state')
+
+        vett = np.asarray(vett)
+
+        num_qudits = round(math.log(len(vett), config.DIM))
+        
+        if num_qudits < 1 or config.DIM ** num_qudits != len(vett):
+            raise ValueError('Total state length must be a power of the qudit dimension')
         
         self.dim=len(vett)
 
@@ -432,9 +439,12 @@ class Total_state(abs_State):
             self._state = None
             return
 
-        vett = np.asarray(vett)
-        if not np.isclose(np.sum(np.abs(vett)**2), 1) :
-            self.normalize()
+        vett = np.asarray(vett, dtype=np.complex128)
+        norm = np.linalg.norm(vett)
+        if np.isclose(norm, 0):
+            raise ValueError('State does not exists')
+        if not np.isclose(norm, 1):
+            vett = vett / norm
 
         self._state = vett
         
