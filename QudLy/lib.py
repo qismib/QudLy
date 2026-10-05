@@ -19,10 +19,9 @@ class Gate(ABC):
     def __init__(self):
         self.dim = config.DIM
         self.name = None
-        self.is_controlled_by = None 
         self.unitary = False
         self.clifford = False
-        self.is_controlled =False
+        self.is_controlled = False
         self.target_qudits = ()
         self.control_qudits = ()
         self.parameters = ()
@@ -34,7 +33,6 @@ class Gate(ABC):
     def dagger(self):
         new_gate=copy.copy(self)
         new_gate.matrix = self.matrix.conj().T
-        new_gate.is_controlled_by = self.is_controlled_by
         new_gate.control_qudits = self.control_qudits
         return new_gate
 
@@ -48,6 +46,8 @@ class Gate(ABC):
     """ A method that controls the printing of the gate matrix"""
 
     def __str__(self):
+        if self.is_controlled:
+            self.Matrix()
         self.draw=np.array2string(self.matrix, precision=2, separator='  ', formatter={'complex_kind': lambda z:  
                 f"{z.real:g}" if np.isclose(z.imag, 0) else (f"{z.imag:g}j" if np.isclose(z.real, 0) else f"{z:.3f}")
         } )
@@ -71,6 +71,7 @@ class  Gate_X(Gate):
         self.clifford = True
         self.target_qudits = (q,)
         self.Matrix()
+        
 
 
 
@@ -180,21 +181,21 @@ class Gate_SUMX(Gate):
         self.is_controlled = True 
         self.target_qudits = (q,)
         self.control_qudits =(p,)
-        self.base_matrix = Gate_X(self.target_qudits[0]).matrix
+        self.base_matrixes = []
         self.matrix = np.zeros((self.dim**2, self.dim**2), dtype=np.complex128)
-        self.Matrix()
-
+    
 
     def Matrix(self):                 
         i=0
         while i<self.dim:
-            self.matrix[self.dim+((i-1)*self.dim):self.dim+i*self.dim, self.dim+((i-1)*self.dim):self.dim+i*self.dim] = np.linalg.matrix_power(self.base_matrix, i)    #np.block?
+            self.matrix[self.dim+((i-1)*self.dim):self.dim+i*self.dim, self.dim+((i-1)*self.dim):self.dim+i*self.dim] = np.linalg.matrix_power(Gate_X(self.target_qudits[0]).matrix, i)    #np.block?
             i+=1
         return self.matrix
 
-
-
-
+    def get_base_matrixes(self):
+        for i in range(self.dim):
+            self.base_matrixes.append(np.linalg.matrix_power(Gate_X(self.target_qudits[0]).matrix, i))
+        return self.base_matrixes
 
 
 
@@ -210,22 +211,26 @@ class Gate_SUMP(Gate):
             self.name = 'SUMP'
         self.unitary=True
         self.clifford = False
-        self.is_controlled= True
+        self.is_controlled = True
         self.target_qudits = (q,)
         self.control_qudits =(p,)
         self.parameters=(theta,)
-        self.base_matrix=Gate_P(self.target_qudits[0], self.parameters[0]).matrix
+        self.base_matrixes = []
         self.matrix = np.zeros((self.dim**2, self.dim**2), dtype=np.complex128)
-        self.Matrix()
 
 
     def Matrix(self):
         i=0
         while i<self.dim:
-            self.matrix[self.dim+((i-1)*self.dim):self.dim+i*self.dim, self.dim+((i-1)*self.dim):self.dim+i*self.dim] = np.linalg.matrix_power(self.base_matrix, i)
+            self.matrix[self.dim+((i-1)*self.dim):self.dim+i*self.dim, self.dim+((i-1)*self.dim):self.dim+i*self.dim] = np.linalg.matrix_power(Gate_P(self.target_qudits[0], self.parameters[0]).matrix, i)
             i+=1
         return self.matrix
 
+
+    def get_base_matrixes(self):
+        for i in range(self.dim):
+            self.base_matrixes.append(np.linalg.matrix_power(Gate_P(self.target_qudits[0], self.parameters[0]).matrix, i))
+        return self.base_matrixes
 
 
 
@@ -244,7 +249,7 @@ class Gate_CZ(Gate_SUMP):
 
 
 
-def apply_CX(state, p: int, q: int):   
+def apply_CX(state, q: int, p: int):   
 
     """A function that receive a state and two int that rapresents qudits. CX rapresent a operator that act  as 
     CX|x>|y> = |x>|-x-y>   """
@@ -316,11 +321,12 @@ def apply_gate(state, gate):
     The function applies a gate to a total quantum state. It uses the tensor representation of the total state so that the gate acts only on the corresponding qudit.
     For now, the function only supports gates controlled by a single qudit.
     The inputs are a Total_state and a gate."""
-
+    
     dim=config.DIM
     num=round(math.log(len(state.state), dim))
-    st = state.state.reshape([dim] * num).copy()
-    if gate.is_controlled:                      
+    st = state.tensor.copy()
+    if gate.is_controlled:        
+        base_matrixes=gate.get_base_matrixes()            
         control=gate.control_qudits[0]
         target=gate.target_qudits[0]
         if control<gate.target_qudits[0]:
@@ -328,7 +334,7 @@ def apply_gate(state, gate):
         for i in range(dim):
             index=[slice(None)]*num
             index[control]=i
-            Res=np.tensordot(np.linalg.matrix_power(gate.base_matrix, i), st[tuple(index)], axes=([1], [target]))
+            Res=np.tensordot(base_matrixes[i], st[tuple(index)], axes=([1], [target]))
             Res=np.moveaxis(Res, 0, target)
             st[tuple(index)]=Res
         res=Total_state(st.reshape(-1))
@@ -351,10 +357,10 @@ class abs_State(ABC):
     """The abstract class inherited by all states. Every state has a dimension and an array associated with it.
     The methods are useful for printing the array and formatting it.
     """  
-
     def __init__(self):
         self.dim = None 
         self.state = None 
+        self.tensor = None
 
     def normalize(self):
         if not np.isclose(np.linalg.norm(self.state), 1):
@@ -402,6 +408,8 @@ class State(abs_State):
 
         self.normalize()
 
+        self.tensor = self.state.view(Tensor)
+
 
     
         
@@ -420,14 +428,16 @@ class Total_state(abs_State):
 
         vett = np.asarray(vett)
 
-        num_qudits = round(math.log(len(vett), config.DIM))
+        num = round(math.log(len(vett), config.DIM))
         
-        if num_qudits < 1 or config.DIM ** num_qudits != len(vett):
+        if num < 1 or config.DIM ** num != len(vett):
             raise ValueError('Total state length must be a power of the qudit dimension')
         
         self.dim=len(vett)
 
         self.state=vett
+
+        self.tensor=self.state.reshape([config.DIM]*num).view(Tensor)
 
     @property
     def state(self):
@@ -491,7 +501,9 @@ def measure_prob(state):
     result=[]
     for l in range(len(state.state)):
         if not np.isclose(prob[l], 0):
-            result.append([indexes(l, len(state.state)), round(float(prob[l]), 4)])
+            ind="".join(map(str, indexes(l, len(state.state))))
+            string="|"+ind+">"
+            result.append([string, round(float(prob[l]), 4)])
     return result
 
 
@@ -503,7 +515,7 @@ def measure_single(state, q: int, collapse:bool = False):
 
     dim=config.DIM
     num=round(math.log(len(state.state), dim))
-    st = state.state.reshape([dim] * num)
+    st = state.tensor
     ax=tuple(i for i in range(num) if i != q)         
     prob = np.sum(np.abs(st)**2, axis=ax)
     m=np.random.choice(dim, p=prob)
@@ -512,8 +524,6 @@ def measure_single(state, q: int, collapse:bool = False):
         slices= [slice(None)]*num
         slices[q]=m
         new_vett[tuple(slices)]=st[tuple(slices)]
-        norm = np.linalg.norm(new_vett)
-        new_vett /= norm
         new_state=Total_state(new_vett.reshape(-1))
         return m, new_state
     else:
@@ -526,13 +536,13 @@ def measure_prob_single(state, q:int ):
      them associated with their index """
     dim=config.DIM
     num=round(math.log(len(state.state), dim))
-    st = state.state.reshape([dim] * num)
+    st = state.tensor
     ax=tuple(i for i in range(num) if i != q)
     prob = np.sum(np.abs(st)**2, axis=ax)
     result=[]
     for i in range(len(prob)):
         if not np.isclose(0, prob[i]):
-            result.append([i, round(float(prob[i]), 4)])
+            result.append([f"|{i}>", round(float(prob[i]), 4)])
     return result
 
 
@@ -553,3 +563,7 @@ def indexes(pos:int, l:int):
 
 
 
+class Tensor(np.ndarray):
+    def __str__(self):
+        self.draw=np.array2string(self, precision=2, separator='  ', formatter={'complex_kind': lambda z: f"{z.real:g}" if np.isclose(z.imag, 0) else (f"{z.imag:g}j" if np.isclose(z.real, 0) else f"{z:.3f}")} )
+        return self.draw

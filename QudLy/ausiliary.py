@@ -103,3 +103,11 @@ def decompose(self):
 
 
 """
+
+
+
+
+"""
+        self.draw=np.array2string(self.matrix, precision=2, separator='  ', formatter={'complex_kind': lambda z:  
+                f"{z.real:g}" if np.isclose(z.imag, 0) else (f"{z.imag:g}j" if np.isclose(z.real, 0) else f"{z:.3f}")
+        } )"""
