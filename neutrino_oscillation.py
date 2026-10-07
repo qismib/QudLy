@@ -67,9 +67,9 @@ for i in range(9):
     for t in angles:
         r=[]
         Gate_R=q.R_tot(1, 0, 2*t)
-        result_state=q.apply_CX(state_tot, 0, 1)
+        result_state=q.apply_CNOT(state_tot, 0, 1)
         result_state=q.apply_gate(result_state, Gate_R)
-        result_state=q.apply_CX(result_state, 0, 1)
+        result_state=q.apply_CNOT(result_state, 0, 1)
         for j in range(1000):
             r.append(q.measure(result_state))
         temp=result(r, t)
@@ -82,9 +82,9 @@ results.append(['|02>+|21>', []])
 for t in angles:
     r=[]
     Gate_R=q.R_tot(1, 0, 2*t)
-    result_state=q.apply_CX(state_tot, 0, 1)
+    result_state=q.apply_CNOT(state_tot, 0, 1)
     result_state=q.apply_gate(result_state, Gate_R)
-    result_state=q.apply_CX(result_state, 0, 1)
+    result_state=q.apply_CNOT(result_state, 0, 1)
     for j in range(1000):
         r.append(q.measure(result_state))
     temp=result(r, t)
@@ -98,9 +98,9 @@ results.append(['|12>+|22>', []])
 for t in angles:
     r=[]
     Gate_R=q.R_tot(1, 0, 2*t)
-    result_state=q.apply_CX(state_tot, 0, 1)
+    result_state=q.apply_CNOT(state_tot, 0, 1)
     result_state=q.apply_gate(result_state, Gate_R)
-    result_state=q.apply_CX(result_state, 0, 1)
+    result_state=q.apply_CNOT(result_state, 0, 1)
     for j in range(1000):
         r.append(q.measure(result_state))
     temp=result(r, t)
@@ -113,9 +113,9 @@ results.append(['|01>+|11>+|20>', []])
 for t in angles:
     r=[]
     Gate_R=q.R_tot(1, 0, 2*t)
-    result_state=q.apply_CX(state_tot, 0, 1)
+    result_state=q.apply_CNOT(state_tot, 0, 1)
     result_state=q.apply_gate(result_state, Gate_R)
-    result_state=q.apply_CX(result_state, 0, 1)
+    result_state=q.apply_CNOT(result_state, 0, 1)
     for j in range(1000):
         r.append(q.measure(result_state))
     temp=result(r, t)

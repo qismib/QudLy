@@ -4,7 +4,6 @@ import  copy
 import math
 
 
-from . import ausiliary as Au
 from . import config
 
 
@@ -249,10 +248,10 @@ class Gate_CZ(Gate_SUMP):
 
 
 
-def apply_CX(state, q: int, p: int):   
+def apply_CNOT(state, q: int, p: int):   
 
-    """A function that receive a state and two int that rapresents qudits. CX rapresent a operator that act  as 
-    CX|x>|y> = |x>|-x-y>   """
+    """A function that receive a state and two int that rapresents qudits. CNOT rapresent a operator that act  as 
+    CNOT|x>|y> = |x>|-x-y>   """
 
     Z=Gate_CZ(q, p)
     H=Gate_H(q)
@@ -273,7 +272,7 @@ def apply_QFT(state, ini:int=0, fi:int=None):
     basis state |x> into  QFT|x> = (1 / sqrt(dim^n)) * sum_{y=0}^{dim^n-1}ω^(x*y) |y>,
     where ω = exp(2*pi*i/dim^n) is the primitive dim^n-th root of unity. """
 
-    num=round(math.log(len(state.state), config.DIM))
+    num=log_int(state.state)
     if fi==None:
         fi=num-1
     theta=float(0)
@@ -292,7 +291,7 @@ def apply_QFT(state, ini:int=0, fi:int=None):
 
     In=ini
     Fin=fi 
-    while In<=Fin:
+    while In<Fin:
         ris=apply_SWAP(ris, In, Fin)
         In=In+1
         Fin=Fin-1
@@ -307,9 +306,9 @@ def apply_SWAP(state, q: int, p: int):
     SWAP|j>|k> = |k>|j>."""
 
     res=state
-    res=apply_CX(res, q, p)
-    res=apply_CX(res, p, q)
-    res=apply_CX(res, q, p)
+    res=apply_CNOT(res, q, p)
+    res=apply_CNOT(res, p, q)
+    res=apply_CNOT(res, q, p)
     return res
 
 
@@ -323,7 +322,7 @@ def apply_gate(state, gate):
     The inputs are a Total_state and a gate."""
     
     dim=config.DIM
-    num=round(math.log(len(state.state), dim))
+    num=log_int(state.state)
     st = state.tensor.copy()
     if gate.is_controlled:        
         base_matrixes=gate.get_base_matrixes()            
@@ -428,7 +427,7 @@ class Total_state(abs_State):
 
         vett = np.asarray(vett)
 
-        num = round(math.log(len(vett), config.DIM))
+        num = log_int(vett)
         
         if num < 1 or config.DIM ** num != len(vett):
             raise ValueError('Total state length must be a power of the qudit dimension')
@@ -514,7 +513,7 @@ def measure_single(state, q: int, collapse:bool = False):
     It returns the index of the state. If collapse is true, the function return also the collaplsed state """
 
     dim=config.DIM
-    num=round(math.log(len(state.state), dim))
+    num=log_int(state.state)
     st = state.tensor
     ax=tuple(i for i in range(num) if i != q)         
     prob = np.sum(np.abs(st)**2, axis=ax)
@@ -534,8 +533,7 @@ def measure_single(state, q: int, collapse:bool = False):
 def measure_prob_single(state, q:int ):
     """A function that compute all the probabilities for a single qudit and print
      them associated with their index """
-    dim=config.DIM
-    num=round(math.log(len(state.state), dim))
+    num=log_int(state.state)
     st = state.tensor
     ax=tuple(i for i in range(num) if i != q)
     prob = np.sum(np.abs(st)**2, axis=ax)
@@ -552,7 +550,7 @@ def indexes(pos:int, l:int):
     """given the array's lenght and the position of an array's entrance, it gives the associated index"""
 
     dim=config.DIM
-    num=round(math.log(l, dim))
+    num=log_int(l)
     digits=[]
     i=num-1
     while i>=0:
@@ -567,3 +565,17 @@ class Tensor(np.ndarray):
     def __str__(self):
         self.draw=np.array2string(self, precision=2, separator='  ', formatter={'complex_kind': lambda z: f"{z.real:g}" if np.isclose(z.imag, 0) else (f"{z.imag:g}j" if np.isclose(z.real, 0) else f"{z:.3f}")} )
         return self.draw
+
+
+def log_int(vett):
+    num = 0
+    if isinstance(vett, int):
+        n=vett
+    else:
+        n = len(vett)
+
+    while n > 1:
+        n //= config.DIM
+        num += 1
+
+    return num

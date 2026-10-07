@@ -1,7 +1,6 @@
 import numpy as np
 
 
-from . import ausiliary as Au
 from . import config
 from . import lib
 
