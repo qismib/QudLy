@@ -126,7 +126,7 @@ for t in angles:
 
 
 
-thetas, points, proba=get_points(results, 11)
+thetas, points, proba=get_points(results, 7)
 lis=np.array(results[7][1][14].res)
 
 
@@ -179,13 +179,13 @@ fig, ax = plt.subplots(figsize=(10, 5))
 fig.gca().set_axisbelow(True)
 ax.grid(True, color="#e3e3e3f2")
 ax.set(xlabel='Theta(rad)', ylabel='Final state',
-       title='Probabilities of the final state in depandance of the angle: Initial state |02>')
+       title='Probabilities of the final state in depandance of the angle: Initial state |20>')
 fig.tight_layout()
 graph = ax.scatter(thetas, points, c=proba, s=150, cmap='YlGnBu', vmin=0, vmax=1)
 plt.xticks(angles, labels)
 plt.yticks(range(9), [r'$|00\rangle$', r'$|01\rangle$', r'$|02\rangle$', r'$|10\rangle$', r'$|11\rangle$', r'$|12\rangle$', r'$|20\rangle$', r'$|21\rangle$', r'$|22\rangle$'])
 plt.ylim(-1, 9)
-fig.colorbar(graph, label='probabilità')
+fig.colorbar(graph, label='probability')
 for x, y, prob in zip(thetas, points , proba):
     plt.annotate(prob, (x, y), xytext=(-7, -15),
                  textcoords='offset points', fontsize=6)

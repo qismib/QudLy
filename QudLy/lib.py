@@ -180,7 +180,7 @@ class Gate_SUMX(Gate):
         self.is_controlled = True 
         self.target_qudits = (q,)
         self.control_qudits =(p,)
-        self.base_matrixes = []
+        self.base_matrices = []
         self.matrix = np.zeros((self.dim**2, self.dim**2), dtype=np.complex128)
     
 
@@ -191,10 +191,10 @@ class Gate_SUMX(Gate):
             i+=1
         return self.matrix
 
-    def get_base_matrixes(self):
+    def get_base_matrices(self):
         for i in range(self.dim):
-            self.base_matrixes.append(np.linalg.matrix_power(Gate_X(self.target_qudits[0]).matrix, i))
-        return self.base_matrixes
+            self.base_matrices.append(np.linalg.matrix_power(Gate_X(self.target_qudits[0]).matrix, i))
+        return self.base_matrices
 
 
 
@@ -214,7 +214,7 @@ class Gate_SUMP(Gate):
         self.target_qudits = (q,)
         self.control_qudits =(p,)
         self.parameters=(theta,)
-        self.base_matrixes = []
+        self.base_matrices = []
         self.matrix = np.zeros((self.dim**2, self.dim**2), dtype=np.complex128)
 
 
@@ -226,10 +226,10 @@ class Gate_SUMP(Gate):
         return self.matrix
 
 
-    def get_base_matrixes(self):
+    def get_base_matrices(self):
         for i in range(self.dim):
-            self.base_matrixes.append(np.linalg.matrix_power(Gate_P(self.target_qudits[0], self.parameters[0]).matrix, i))
-        return self.base_matrixes
+            self.base_matrices.append(np.linalg.matrix_power(Gate_P(self.target_qudits[0], self.parameters[0]).matrix, i))
+        return self.base_matrices
 
 
 
@@ -325,7 +325,7 @@ def apply_gate(state, gate):
     num=log_int(state.state)
     st = state.tensor.copy()
     if gate.is_controlled:        
-        base_matrixes=gate.get_base_matrixes()            
+        base_matrices=gate.get_base_matrices()            
         control=gate.control_qudits[0]
         target=gate.target_qudits[0]
         if control<gate.target_qudits[0]:
@@ -333,7 +333,7 @@ def apply_gate(state, gate):
         for i in range(dim):
             index=[slice(None)]*num
             index[control]=i
-            Res=np.tensordot(base_matrixes[i], st[tuple(index)], axes=([1], [target]))
+            Res=np.tensordot(base_matrices[i], st[tuple(index)], axes=([1], [target]))
             Res=np.moveaxis(Res, 0, target)
             st[tuple(index)]=Res
         res=Total_state(st.reshape(-1))
@@ -568,6 +568,7 @@ class Tensor(np.ndarray):
 
 
 def log_int(vett):
+    """a function for a precise logarithm for integer  """
     num = 0
     if isinstance(vett, int):
         n=vett
