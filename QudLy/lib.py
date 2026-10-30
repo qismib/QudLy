@@ -182,13 +182,15 @@ class Gate_SUMX(Gate):
         self.control_qudits =(p,)
         self.base_matrices = []
         self.matrix = np.zeros((self.dim**2, self.dim**2), dtype=np.complex128)
+        self.Matrix()
     
 
-    def Matrix(self):                 
-        i=0
-        while i<self.dim:
-            self.matrix[self.dim+((i-1)*self.dim):self.dim+i*self.dim, self.dim+((i-1)*self.dim):self.dim+i*self.dim] = np.linalg.matrix_power(Gate_X(self.target_qudits[0]).matrix, i)    #np.block?
-            i+=1
+    def Matrix(self):
+        for i in range(self.dim):
+            block = np.linalg.matrix_power(Gate_X(self.target_qudits[0]).matrix, i)
+            start = i * self.dim
+            end = start + self.dim
+            self.matrix[start:end, start:end] = block
         return self.matrix
 
     def get_base_matrices(self):
@@ -216,13 +218,15 @@ class Gate_SUMP(Gate):
         self.parameters=(theta,)
         self.base_matrices = []
         self.matrix = np.zeros((self.dim**2, self.dim**2), dtype=np.complex128)
+        self.Matrix()
 
 
     def Matrix(self):
-        i=0
-        while i<self.dim:
-            self.matrix[self.dim+((i-1)*self.dim):self.dim+i*self.dim, self.dim+((i-1)*self.dim):self.dim+i*self.dim] = np.linalg.matrix_power(Gate_P(self.target_qudits[0], self.parameters[0]).matrix, i)
-            i+=1
+        for i in range(self.dim):
+            block = np.linalg.matrix_power(Gate_P(self.target_qudits[0], self.parameters[0]).matrix, i)
+            start = i * self.dim
+            end = start + self.dim
+            self.matrix[start:end, start:end] = block
         return self.matrix
 
 
@@ -312,7 +316,7 @@ def apply_SWAP(state, q: int, p: int):
     return res
 
 
-
+#--------------------------------------------------------------------------------------------------------------------------------------------
 
 def apply_gate(state, gate): 
 
@@ -390,18 +394,19 @@ class State(abs_State):
 
         self.dim=config.DIM
 
+        if N is None:
+            raise ValueError('State index must be provided')
+
         if vett is None:
-            self.state=np.asarray(np.zeros(self.dim), dtype=np.complex128)
-            self.state[0]=1
+            self.state = np.zeros(self.dim, dtype=np.complex128)
+            self.state[0] = 1
         else:
-            self.state=np.asarray(vett, dtype=np.complex128)
-            if self.state.shape!=(config.DIM,):
-                raise ValueError(f'State must have dimension {self.dim}')
-            if np.allclose(self.state, 0):
-                raise ValueError('State does not exists')
-        
-        if N is None:                                                      
-            raise ValueError('State must have an identification number')
+            self.state = np.asarray(vett, dtype=np.complex128)
+
+        if self.state.shape != (self.dim,):
+            raise ValueError(f'State must have dimension {self.dim}')
+        if np.allclose(self.state, 0):
+            raise ValueError('State does not exists')
         
         self.num = N 
 
@@ -419,7 +424,7 @@ class Total_state(abs_State):
     """The class represent a total state. It was decided to adopt a linear representation 
     with the most significant qudit on the left. The state is automatically normalized.              """     #total state    example: |000>   
 
-    def __init__(self, vett):   
+    def __init__(self, vett=None):   
 
         super().__init__()
         if vett is None:
@@ -485,10 +490,9 @@ def measure(state):
 
     """A function that simulate a state's measure. It returns the index of the state """
 
-    prob=np.abs(state)**2
-    m=np.random.choice(len(state.state), p=prob)
-    st=indexes(m, len(state.state))
-    return st
+    prob = np.abs(state.state)**2
+    m = np.random.choice(len(state.state), p=prob)
+    return indexes(m, state.state)
 
 
 
@@ -496,13 +500,11 @@ def measure_prob(state):
 
     """A function that compute all the probabilities and print them associated with their index """
 
-    prob=np.abs(state)**2
-    result=[]
+    prob = np.abs(state.state)**2
+    result = []
     for l in range(len(state.state)):
         if not np.isclose(prob[l], 0):
-            ind="".join(map(str, indexes(l, len(state.state))))
-            string="|"+ind+">"
-            result.append([string, round(float(prob[l]), 4)])
+            result.append([indexes(l, state.state), round(float(prob[l]), 4)])
     return result
 
 
@@ -540,17 +542,26 @@ def measure_prob_single(state, q:int ):
     result=[]
     for i in range(len(prob)):
         if not np.isclose(0, prob[i]):
-            result.append([f"|{i}>", round(float(prob[i]), 4)])
+            result.append([i, round(float(prob[i]), 4)])
     return result
 
 
 
-def indexes(pos:int, l:int):    
+def indexes(pos:int, l):    
 
-    """given the array's lenght and the position of an array's entrance, it gives the associated index"""
+    """given the array and the position of an array's entrance, it gives the associated index"""
 
     dim=config.DIM
-    num=log_int(l)
+    if isinstance(l, np.ndarray):
+        size = len(l)
+    else:
+        size = int(l)
+
+    num = 0
+    while size > 1:
+        size //= dim
+        num += 1
+
     digits=[]
     i=num-1
     while i>=0:
@@ -568,10 +579,10 @@ class Tensor(np.ndarray):
 
 
 def log_int(vett):
-    """a function for a precise logarithm for integer  """
+    """a function for a precise logarithm base dim for integer  """
     num = 0
-    if isinstance(vett, int):
-        n=vett
+    if isinstance(vett, (int, np.integer)):
+        n = int(vett)
     else:
         n = len(vett)
 
@@ -580,3 +591,12 @@ def log_int(vett):
         num += 1
 
     return num
+
+
+def is_unitary(matrix):
+    """Return True when a square matrix is unitary within numerical tolerance."""
+    matrix = np.asarray(matrix)
+    if matrix.ndim != 2 or matrix.shape[0] != matrix.shape[1]:
+        return False
+    identity = np.eye(matrix.shape[0], dtype=np.complex128)
+    return np.allclose(matrix.conj().T @ matrix, identity)
