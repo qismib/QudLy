@@ -25,8 +25,7 @@ class  Gate_Oracle(lib.Gate):
     def Matrix(self):
         self.matrix=np.identity(self.dim)
         self.matrix[self.parameters[0]][self.parameters[0]]=-1
-        return self.matrix
-
+ 
 
 
 class Gate_Reflection(lib.Gate):
@@ -46,4 +45,4 @@ class Gate_Reflection(lib.Gate):
     def Matrix(self):
         self.matrix=np.ones((self.dim, self.dim))*(2/self.dim)
         self.matrix=(self.matrix-np.identity(self.dim))*np.exp(1j*np.pi/self.dim)
-        return self.matrix 
+   

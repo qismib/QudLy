@@ -32,7 +32,7 @@ class Gate_R(lib.Gate):
         self.matrix[self.indexes[0]][self.indexes[0]]=np.cos(self.parameters[0])
         self.matrix[self.indexes[1]][self.indexes[0]]=-np.sin(self.parameters[0])*1j
         self.matrix[self.indexes[0]][self.indexes[1]]=-np.sin(self.parameters[0])*1j
-        return self.matrix
+       
 
 
 
@@ -62,7 +62,7 @@ class R_tot(lib.Gate):
         self.get_base_matrices()
         a, b, c = sp.symbols('a b c')
         self.matrix = a*self.base_matrices[0]+b*self.base_matrices[1]+c*self.base_matrices[2]
-        return self.matrix
+
 
 
 
