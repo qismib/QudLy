@@ -480,8 +480,8 @@ def measure(state):
 
     prob=np.abs(state)**2
     m=np.random.choice(len(state.state), p=prob)
-    st=indexes(m, state.state)
-    return st
+    ind=indexes(m, state.state)
+    return ind
 
 
 
