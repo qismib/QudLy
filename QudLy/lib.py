@@ -324,10 +324,10 @@ def apply_gate(state, gate):
     dim=config.DIM
     num=log_int(state.state)
     st = state.tensor.copy()
-    if gate.is_controlled:        
+    target=gate.target_qudits[0]
+    if gate.is_controlled:      
         base_matrices=gate.get_base_matrices()            
-        control=gate.control_qudits[0]
-        target=gate.target_qudits[0]
+        control=gate.control_qudits[0]     
         if control<gate.target_qudits[0]:
             target-=1
         for i in range(dim):
@@ -338,8 +338,8 @@ def apply_gate(state, gate):
             st[tuple(index)]=Res
         res=Total_state(st.reshape(-1))
     else:
-        st=np.tensordot(gate.matrix, st, axes=([1], [gate.target_qudits[0]]))
-        st=np.moveaxis(st, 0, gate.target_qudits[0])
+        st=np.tensordot(gate.matrix, st, axes=([1], [target]))
+        st=np.moveaxis(st, 0, target)
         res=Total_state(st.reshape(-1))
     return res 
 
