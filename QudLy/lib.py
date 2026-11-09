@@ -495,7 +495,7 @@ def measure_prob(state):
         if not np.isclose(prob[l], 0):
             ind="".join(map(str, indexes(l, state.state)))
             string="|"+ind+">"
-            result.append([string, round(float(prob[l]), 4)])
+            result.append([string, round(float(prob[l]), 14)])
            
     return result
 
