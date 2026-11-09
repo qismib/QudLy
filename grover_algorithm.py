@@ -35,6 +35,7 @@ for i in range(q.config.DIM):
 
 result_prob=np.zeros((q.config.DIM, q.config.DIM))
 
+
 for i in range(q.config.DIM):
     r=[]
     for j in range(1000):
@@ -48,9 +49,11 @@ result_prob=result_prob/1000
 
 print(result_prob)  
 
-
-
-
+sum=0
+for i in range(8):
+    sum=sum+result_prob[i][i]
+sum=sum/8
+print(sum)
 
 
 

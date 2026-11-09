@@ -70,6 +70,7 @@ for i in range(9):
         result_state=q.apply_CNOT(state_tot, 0, 1)
         result_state=q.apply_gate(result_state, Gate_R)
         result_state=q.apply_CNOT(result_state, 0, 1)
+        print(q.measure_prob(result_state))
         for j in range(1000):
             r.append(q.measure(result_state))
         temp=result(r, t)
@@ -126,9 +127,9 @@ for t in angles:
 
 
 
-thetas, points, proba=get_points(results, 7)
-lis=np.array(results[7][1][14].res)
-
+thetas, points, proba=get_points(results, 6)
+lis=np.array(results[6][1][14].res)
+print(proba)
 
 
 
