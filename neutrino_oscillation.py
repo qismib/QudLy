@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 
 q.set_dim(3)
 
-
 class result():
     def __init__(self, vett, theta):   
         self.res=vett

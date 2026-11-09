@@ -13,7 +13,9 @@ class Gate_R(lib.Gate):
 
     def __init__(self, q: int, theta: float, index:int):
             if config.DIM != 3:
-                 raise ValueError('This gate is defined only in dimension 3')
+                 raise ValueError('This gate is defined only in dimension 3') 
+            if index != 1 and index !=2 and index!=0:
+                 raise ValueError('The index must be 0, 1 or 2')
             super().__init__()   
             self.indexes = ((index+1)%3 , (index-1)%3)
             self.name = 'R^{'f'{self.indexes[0]}{self.indexes[1]}''}'
@@ -58,12 +60,9 @@ class R_tot(lib.Gate):
 
 
     def Matrix(self):
-        import sympy as sp
         self.get_base_matrices()
-        a, b, c = sp.symbols('a b c')
-        self.matrix = a*self.base_matrices[0]+b*self.base_matrices[1]+c*self.base_matrices[2]
-
-
+        self.matrix = np.block([[self.base_matrices[0], np.zeros_like(self.base_matrices[0]), np.zeros_like(self.base_matrices[0])], [np.zeros_like(self.base_matrices[0]), self.base_matrices[1], np.zeros_like(self.base_matrices[0])], [np.zeros_like(self.base_matrices[0]), np.zeros_like(self.base_matrices[0]), self.base_matrices[2]]])
+        
 
 
     def get_base_matrices(self):
