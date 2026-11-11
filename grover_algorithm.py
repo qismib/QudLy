@@ -5,21 +5,46 @@ import matplotlib.pyplot as plt
 
 q.set_dim(8)
 
+database = {
+    0: 42,
+    1: 17,
+    2: 89,
+    3: 25,
+    4: 63,
+    5:3,
+    6:2,
+    7:1
+}
+
+
+
 
 array=np.zeros(q.config.DIM)
 array[0]=1
 initial_state=q.Total_state(array)
+
+
 H=q.Gate_H(0)
 R=q.Gate_Reflection(0)
-
 
 
 result_states=[]
 
 
+
+
+
 for i in range(q.config.DIM):
 
-    O=q.Gate_Oracle(0, i)
+    def funzione_cerca_3(a):
+        if database[a]== database[i]:
+            return int(1)
+        else:
+            return int(0)
+        
+    O=q.Gate_Oracle(0, funzione_cerca_3)
+
+    print(O.matrix)
 
     state=q.apply_gate(initial_state, H)
 

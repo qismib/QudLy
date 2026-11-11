@@ -11,7 +11,7 @@ class  Gate_Oracle(lib.Gate):
     """A gate that, given a state's index, marks that state. It acts as O|j> = |j> if j  it's not the marked state, 
       O|j> = |-j> if j is the marked state"""
 
-    def __init__(self, q: int, target: int):
+    def __init__(self, q: int, target):
         super().__init__()
         self.name = 'Oracle'
         self.unitary = True
@@ -23,8 +23,8 @@ class  Gate_Oracle(lib.Gate):
 
 
     def Matrix(self):
-        self.matrix=np.identity(self.dim)
-        self.matrix[self.parameters[0]][self.parameters[0]]=-1
+        for i in range(self.dim):
+            self.matrix[i][i]=(-1)**(self.parameters[0](i))
  
 
 
