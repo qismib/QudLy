@@ -13,7 +13,17 @@ database = {
     4: 63,
     5:3,
     6:2,
-    7:1
+   7:1,
+ #   8: 40,
+ #   9: 18,
+ #   10: 84,
+#    12: 65,
+ #   13:34,
+#    14:22,
+#    15:16,
+#    16:55,
+ #   17:90,
+
 }
 
 
@@ -27,7 +37,7 @@ initial_state=q.Total_state(array)
 H=q.Gate_H(0)
 R=q.Gate_Reflection(0)
 
-
+print(R)
 result_states=[]
 
 
@@ -44,7 +54,6 @@ for i in range(q.config.DIM):
         
     O=q.Gate_Oracle(0, funzione_cerca_3)
 
-    print(O.matrix)
 
     state=q.apply_gate(initial_state, H)
 
@@ -74,10 +83,12 @@ result_prob=result_prob/1000
 
 print(result_prob)  
 
+
+
 sum=0
-for i in range(8):
+for i in range(q.config.DIM):
     sum=sum+result_prob[i][i]
-sum=sum/8
+sum=sum/q.config.DIM
 print(sum)
 
 

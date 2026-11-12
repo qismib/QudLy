@@ -44,5 +44,7 @@ class Gate_Reflection(lib.Gate):
 
     def Matrix(self):
         self.matrix=np.ones((self.dim, self.dim))*(2/self.dim)
-        self.matrix=(self.matrix-np.identity(self.dim))*np.exp(1j*np.pi/self.dim)
+        self.matrix=(self.matrix-np.identity(self.dim))
+        if self.dim%2==0:
+            self.matrix=self.matrix*np.exp(1j*np.pi/self.dim)
    
