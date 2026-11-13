@@ -37,7 +37,6 @@ initial_state=q.Total_state(array)
 H=q.Gate_H(0)
 R=q.Gate_Reflection(0)
 
-print(R)
 result_states=[]
 
 
@@ -46,13 +45,13 @@ result_states=[]
 
 for i in range(q.config.DIM):
 
-    def funzione_cerca_3(a):
+    def function(a):
         if database[a]== database[i]:
             return int(1)
         else:
             return int(0)
         
-    O=q.Gate_Oracle(0, funzione_cerca_3)
+    O=q.Gate_Oracle(0, function)
 
 
     state=q.apply_gate(initial_state, H)
@@ -64,7 +63,7 @@ for i in range(q.config.DIM):
     result_states.append(state)
     
 
-
+print(round((np.pi*np.sqrt(q.config.DIM))/4))
 
 
 result_prob=np.zeros((q.config.DIM, q.config.DIM))
@@ -93,6 +92,28 @@ print(sum)
 
 
 
+P_success = np.sin((2*round((np.pi*np.sqrt(q.config.DIM))/4) + 1) * np.arcsin(1 / np.sqrt(q.config.DIM)))**2
+
+P_other = (1 - P_success) / (q.config.DIM - 1)
+
+
+final=0
+for j in range(q.config.DIM):
+    S=0
+    for i in range(q.config.DIM):
+        if i!=j:
+            S=S+np.sqrt(P_other*result_prob[i][j])
+        else: 
+            S=S+np.sqrt(P_success*result_prob[i][j])
+    S=S*S
+    final=final+S
+final=final/q.config.DIM
+print(final)
+
+
+
+
+
 fig, ax = plt.subplots(figsize=(10, 8))
 im = ax.imshow(
     result_prob,
@@ -102,7 +123,7 @@ im = ax.imshow(
 )
 
 cbar = fig.colorbar(im, ax=ax)
-cbar.set_label("Success Probability", fontsize=14)
+cbar.set_label("Probabilità di successo", fontsize=15)
 
 states=[]
 for i in range(q.config.DIM):
@@ -114,8 +135,8 @@ ax.set_yticks(np.arange(q.config.DIM))
 ax.set_xticklabels(states, fontsize=14)
 ax.set_yticklabels(states, fontsize=14)
 
-ax.set_xlabel("Marked State", fontsize=16)
-ax.set_ylabel("Measured State", fontsize=16)
+ax.set_xlabel("Stato marcato", fontsize=16)
+ax.set_ylabel("Stato misurato", fontsize=16)
 
 # Testo dentro le celle
 for i in range(result_prob.shape[0]):
@@ -136,3 +157,5 @@ for i in range(result_prob.shape[0]):
 plt.tight_layout()
 
 plt.show()
+
+
