@@ -41,7 +41,7 @@ class Gate_R(lib.Gate):
 
 
 
-class R_tot(lib.Gate):
+class Gate_CR(lib.Gate):
 
     """a controlled gate that is the combination of the three R gates. It applies R0 if the control qudit is |0>, R1 if it's in |1> and R2 if  it's  in |2>"""
     

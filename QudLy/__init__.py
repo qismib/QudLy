@@ -2,5 +2,5 @@ from .config  import set_dim
 from .lib import Gate, Gate_X, Gate_Z, Gate_H, Gate_P, Gate_SUMX, Gate_SUMP, Gate_CZ, State, apply_gate, Total_state, create_state, apply_QFT, apply_CNOT, apply_SWAP
 from .lib import measure, indexes, measure_prob, measure_single, measure_prob_single
 import numpy as np
-from .qutrit import Gate_R, R_tot
+from .qutrit import Gate_R, Gate_CR
 from .grover import Gate_Oracle, Gate_Reflection

@@ -65,7 +65,7 @@ for i in range(9):
 
     for t in angles:
         r=[]
-        Gate_R=q.R_tot(1, 0, 2*t)
+        Gate_R=q.Gate_CR(1, 0, 2*t)
         result_state=q.apply_CNOT(state_tot, 0, 1)
         result_state=q.apply_gate(result_state, Gate_R)
         result_state=q.apply_CNOT(result_state, 0, 1)
@@ -81,7 +81,7 @@ state_tot=q.Total_state([0, 0, 1, 0, 0, 0, 0, 1, 0])
 results.append(['|02>+|21>', []])
 for t in angles:
     r=[]
-    Gate_R=q.R_tot(1, 0, 2*t)
+    Gate_R=q.Gate_CR(1, 0, 2*t)
     result_state=q.apply_CNOT(state_tot, 0, 1)
     result_state=q.apply_gate(result_state, Gate_R)
     result_state=q.apply_CNOT(result_state, 0, 1)
@@ -97,7 +97,7 @@ state_tot=q.Total_state([0, 0, 0, 0, 0, 2, 0, 0, 3])
 results.append(['|12>+|22>', []])
 for t in angles:
     r=[]
-    Gate_R=q.R_tot(1, 0, 2*t)
+    Gate_R=q.Gate_CR(1, 0, 2*t)
     result_state=q.apply_CNOT(state_tot, 0, 1)
     result_state=q.apply_gate(result_state, Gate_R)
     result_state=q.apply_CNOT(result_state, 0, 1)
@@ -112,7 +112,7 @@ state_tot=q.Total_state([0, 1, 0, 0, 1, 0, 1, 0, 0])
 results.append(['|01>+|11>+|20>', []])
 for t in angles:
     r=[]
-    Gate_R=q.R_tot(1, 0, 2*t)
+    Gate_R=q.Gate_CR(1, 0, 2*t)
     result_state=q.apply_CNOT(state_tot, 0, 1)
     result_state=q.apply_gate(result_state, Gate_R)
     result_state=q.apply_CNOT(result_state, 0, 1)
@@ -126,12 +126,12 @@ for t in angles:
 
 
 
-thetas, points, proba=get_points(results, 6)
-lis=np.array(results[6][1][14].res)
-print(proba)
+thetas, points, proba=get_points(results, 4)
+lis=np.array(results[4][1][14].res)
 
-for i in range(24):
-    print(results[6][1][i].theorical)
+
+#for i in range(24):
+#    print(results[6][1][i].theorical)
 
 
 
@@ -181,17 +181,41 @@ plt.grid(axis='y', color="#bcbcbcf0", alpha=0.3)
 fig, ax = plt.subplots(figsize=(10, 5))
 fig.gca().set_axisbelow(True)
 ax.grid(True, color="#e3e3e3f2")
-ax.set(xlabel='Theta(rad)', ylabel='Final state',
-       title='Probabilities of the final state in depandance of the angle: Initial state |20>')
+ax.set(xlabel=('Theta(rad)'), ylabel='Final state', 
+       )
 fig.tight_layout()
+plt.xlabel("Theta(rad)", fontsize=12)
+plt.ylabel("Stato finale", fontsize=12)
 graph = ax.scatter(thetas, points, c=proba, s=150, cmap='YlGnBu', vmin=0, vmax=1)
-plt.xticks(angles, labels)
+plt.xticks(angles, labels, fontsize=12)
 plt.yticks(range(9), [r'$|00\rangle$', r'$|01\rangle$', r'$|02\rangle$', r'$|10\rangle$', r'$|11\rangle$', r'$|12\rangle$', r'$|20\rangle$', r'$|21\rangle$', r'$|22\rangle$'])
 plt.ylim(-1, 9)
-fig.colorbar(graph, label='probability')
-for x, y, prob in zip(thetas, points , proba):
-    plt.annotate(prob, (x, y), xytext=(-7, -15),
-                 textcoords='offset points', fontsize=6)
+cbar=fig.colorbar(graph)
+cbar.set_label("Frequenza relativa", fontsize=12)
+
+
+counters = {4: 0, 4: 0}
+
+for prob, x, y in zip(proba, thetas, points):
+
+    offset = 12 if counters[y] % 2 == 0 else -15
+    counters[y] += 1
+
+    plt.annotate(
+        prob,
+        (x, y),
+        xytext=(0, offset),
+        textcoords='offset points',
+        ha='center',
+        va='bottom' if offset > 0 else 'top',
+        fontsize=8
+    )
+#for x, y, prob in enumerate(zip(thetas, points , proba)):
+ #   offset = 12 if i % 2 == 0 else -18
+
+
+ #   plt.annotate(prob, (x, y), xytext=(-7, offset),
+  #               textcoords='offset points', fontsize=8)
 
 
 plt.show()
